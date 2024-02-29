@@ -1,6 +1,9 @@
 from django.db import models
 
 
+from users.models import Cohort, IMUser
+
+
 
 class Course(models.Model):
     name = models.CharField(max_length=1000)
@@ -10,31 +13,7 @@ class Course(models.Model):
 
     def _str_(self):
         return f"{self.name}"
-class IMUser(models.Model):
-    USER_TYPES = [
-        ('EIT', 'EIT'),
-        ('TEACHING_FELLOW', 'Teaching Fellow'),
-        ('ADMIN_STAFF', 'Admin Staff'),
-        ('ADMIN', 'Admin'),
-    ]
 
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
-    user_type = models.CharField(max_length=20, choices=USER_TYPES)
-    date_created = models.DateTimeField(auto_now_add=True)  
-
-class Cohort(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    year = models.PositiveIntegerField()
-    start_date = models.DateField()
-    end_date = models.DateField()
-    is_active = models.BooleanField(default=True)
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_modified = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(IMUser, on_delete=models.CASCADE)
-    
 
     
 class ClassSchedule(models.Model):
@@ -48,6 +27,12 @@ class ClassSchedule(models.Model):
     organizer = models.CharField(max_length=100)
     cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE, related_name='classes')
     venue = models.CharField(max_length=100)
+    facilitator=models.ForeignKey(IMUser, on_delete=models.CASCADE, related_name='classes')
+    organizer=models.ForeignKey(IMUser, on_delete=models.CASCADE)
+    is_active=models.BooleanField(default=True)
+    Course=models.ForeignKey(Course, on_delete=models.CASCADE)
+    date_created=models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    date_modified=models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     def __str__(self) -> str:
         start_date_str = self.start_date_and_time.strftime("%d/%m/%Y, %H:%M")
@@ -56,7 +41,7 @@ class ClassSchedule(models.Model):
 
 class ClassAttendance(models.Model):
     class_schedule = models.ForeignKey(ClassSchedule, on_delete=models.CASCADE, related_name="class_schedule")
-    attendee = models.ForeignKey(IMUser, on_delete=models.CASCADE, related_name="class_attendee")
+    attendee = models.ForeignKey(IMUser,on_delete=models.CASCADE, related_name="class_attendee")
     is_present= models.BooleanField(default=True)
     date_created= models.DateTimeField(auto_now_add=True, blank=True, null=True)
     date_modified= models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -68,8 +53,8 @@ class ClassAttendance(models.Model):
 class Query(models.Model):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=100)
-    submitted_by = models.ForeignKey(IMUser, on_delete=models.CASCADE, related_name="submitted_by")
-    assigned_to = models.ForeignKey(IMUser, on_delete=models.CASCADE, related_name="assigned_to")
+    submitted_by = models.ForeignKey( IMUser,on_delete=models.CASCADE, related_name="submitted_by")
+    assigned_to = models.ForeignKey( IMUser,on_delete=models.CASCADE, related_name="assigned_to")
     resolution_status = models.CharField(
         max_length = 100,
         choices = {
@@ -79,7 +64,15 @@ class Query(models.Model):
             "RESOLVED": "RESOLVED",
         },
         default = 'PENDING'
+           )
+    
+    MEETING_TYPES=(
+        ('CLASS_SESSION', 'class_sessions'),
+        ('WELLNESS_SESSION', 'well session'),
+        ('GUEST_LECTURE', 'Guest Lecture')
     )
+
+ 
     date_created= models.DateTimeField(auto_now_add=True, blank=True, null=True)
     date_modified= models.DateTimeField(auto_now=True, blank=True, null=True)
     author = models.ForeignKey(IMUser, on_delete=models.CASCADE, related_name="query_author")
